@@ -41,17 +41,35 @@ describe("My Token", () => {
     });
   describe("transfer", () => {
         it("should have 0.5MT", async () => {
+            const signer0 = signers[0];
             const signer1 = signers[1];
-            await myTokenC.transfer(hre.ethers.parseUnits("0.5", decimals), signer1.address);
+            await expect(await myTokenC.transfer(
+                hre.ethers.parseUnits("0.5", decimals), 
+                signer1.address
+            )
+        )
+            .to.emit(myTokenC, "Transfer")
+            .withArgs(
+                signer0.address, 
+                signer1.address, 
+                hre.ethers.parseUnits("0.5", decimals)
+            );
+
+            // const receipt = await tx.wait();
+            // console.log(receipt?.logs)
             expect(await myTokenC.balanceOf(signer1.address)).equal(
                 hre.ethers.parseUnits("0.5", decimals)
             );
+
+            // const filter = myTokenC.filters.Transfer(signer0.address);
+            // const logs = await myTokenC.queryFilter(filter, 0, "latest");
+
         });
         it("should be reverted with insufficient balance error", async () => {
             const signer1 = signers[1];
             await expect(
                 myTokenC.transfer(
-                    hre.ethers.parseUnits("101", decimals), 
+                    hre.ethers.parseUnits((mintingAmount + 1n).toString(), decimals), 
                     signer1.address
                 )
             ).to.be.revertedWith("insufficient balance");
