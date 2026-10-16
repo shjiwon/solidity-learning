@@ -11,11 +11,12 @@ describe("My Token", () => {
     let signers: HardhatEthersSigner[];
 
     beforeEach("should deploy", async () => {
+        signers = await hre.ethers.getSigners();
         myTokenC = await hre.ethers.deployContract("MyToken", [
             "MyToken",
             "MT",
-            18,
-            100,
+            decimals,
+            mintingAmount,
         ]);
 
         signers = await hre.ethers.getSigners();
