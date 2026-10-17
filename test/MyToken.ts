@@ -2,9 +2,7 @@ import hre from "hardhat";
 import { expect } from "chai";
 import { MyToken } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-
-const mintingAmount = 100n;
-const decimals = 18n;
+import { DECIMALS, MINTING_AMOUNT } from "./constant";
 
 describe("My Token", () => {
     let myTokenC: MyToken;
@@ -15,8 +13,8 @@ describe("My Token", () => {
         myTokenC = await hre.ethers.deployContract("MyToken", [
             "MyToken",
             "MT",
-            decimals,
-            mintingAmount,
+            DECIMALS,
+            MINTING_AMOUNT,
         ]);
 
         signers = await hre.ethers.getSigners();
@@ -37,7 +35,7 @@ describe("My Token", () => {
 
         it("should return 100 totalSupply", async () => {
             expect(await myTokenC.totalSupply()).equal(
-                mintingAmount * 10n ** decimals
+                MINTING_AMOUNT * 10n ** DECIMALS
             );
         });
     });
@@ -50,7 +48,7 @@ describe("My Token", () => {
             expect(
                 await myTokenC.balanceOf(signer0.address)
             ).equal(
-                mintingAmount * 10n ** decimals
+                MINTING_AMOUNT * 10n ** DECIMALS
             );
         });
     });
@@ -62,7 +60,7 @@ describe("My Token", () => {
 
             await expect(
                 myTokenC.transfer(
-                    hre.ethers.parseUnits("0.5", decimals),
+                    hre.ethers.parseUnits("0.5", DECIMALS),
                     signer1.address
                 )
             )
@@ -70,13 +68,13 @@ describe("My Token", () => {
                 .withArgs(
                     signer0.address,
                     signer1.address,
-                    hre.ethers.parseUnits("0.5", decimals)
+                    hre.ethers.parseUnits("0.5", DECIMALS)
                 );
 
             expect(
                 await myTokenC.balanceOf(signer1.address)
             ).equal(
-                hre.ethers.parseUnits("0.5", decimals)
+                hre.ethers.parseUnits("0.5", DECIMALS)
             );
         });
 
@@ -86,8 +84,8 @@ describe("My Token", () => {
             await expect(
                 myTokenC.transfer(
                     hre.ethers.parseUnits(
-                        (mintingAmount + 1n).toString(),
-                        decimals
+                        (MINTING_AMOUNT + 1n).toString(),
+                        DECIMALS
                     ),
                     signer1.address
                 )
@@ -102,13 +100,13 @@ describe("My Token", () => {
             await expect(
                 myTokenC.approve(
                     signer1.address,
-                    hre.ethers.parseUnits("10", decimals)
+                    hre.ethers.parseUnits("10", DECIMALS)
                 )
             )
                 .to.emit(myTokenC, "Approval")
                 .withArgs(
                     signer1.address,
-                    hre.ethers.parseUnits("10", decimals)
+                    hre.ethers.parseUnits("10", DECIMALS)
                 );
         });
 
@@ -123,7 +121,7 @@ describe("My Token", () => {
                     .transferFrom(
                         signer0.address,
                         signer1.address,
-                        hre.ethers.parseUnits("1", decimals)
+                        hre.ethers.parseUnits("1", DECIMALS)
                     )
             ).to.be.revertedWith("insufficient allowance");
         });
@@ -132,7 +130,7 @@ describe("My Token", () => {
         it("should transfer signer0 token to signer1 by signer1", async () => {
             const signer0 = signers[0];
             const signer1 = signers[1];
-            const amount = hre.ethers.parseUnits("10", decimals);
+            const amount = hre.ethers.parseUnits("10", DECIMALS);
 
             // 1. approve: signer1에게 signer0의 자산 이동권한 부여
             await myTokenC.approve(
@@ -152,12 +150,12 @@ describe("My Token", () => {
             // 3. balance 확인
             expect(await myTokenC.balanceOf(signer0.address)
             ).equal(
-                hre.ethers.parseUnits("90", decimals)
+                hre.ethers.parseUnits("90", DECIMALS)
             );
 
             expect(await myTokenC.balanceOf(signer1.address)
             ).equal(
-                hre.ethers.parseUnits("10", decimals)
+                hre.ethers.parseUnits("10", DECIMALS)
             );
         });
     });
