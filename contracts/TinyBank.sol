@@ -63,7 +63,7 @@ contract TinyBank is ManagedAccess {
     }
 
     // 누구나 rewardPerBlock를 바꿀 수 있음 -> 보안상 위험
-    function setRewardPerBlock(uint256 _amount) external onlyManager {
+    function setRewardPerBlock(uint256 _amount) external onlyAllConfirmed {
         rewardPerBlock = _amount;
     }
 
