@@ -21,6 +21,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import "./ManagedAccess.sol";
+
 interface IMyToken {
     // MyToken.sol에서 정의한 함수를 그대로 가져와서 사용 가능
     function transfer(uint256 amount, address to) external;
@@ -28,44 +30,53 @@ interface IMyToken {
     function mint(uint256 amount, address owner) external;
 }
 
-contract TinyBank {
+contract TinyBank is ManagedAccess {
     event Staked(address from, uint256 amount);
     event Withdraw(uint256 amount, address to);
     
     IMyToken public stakingToken;  // 저금할 토큰 배포
 
     mapping(address => uint256) public lastClaimedBlock;
-    uint256 rewardPerBlock = 1 * 10 ** 10;
+
+    uint256 defaultRewardPerBlock = 1 * 10 ** 18;  // 1 MT/block
+    uint256 rewardPerBlock;
 
     mapping(address => uint256) public staked;
     uint public totalStaked;  // 모든 유저의 skaking 양
 
     // 그 토큰의 주소를 constructor의 파라미터로 줘야 함
-    constructor(IMyToken _stakingToken) {
+    constructor(IMyToken _stakingToken) ManagedAccess(msg.sender, msg.sender) {
         stakingToken = _stakingToken;
+        rewardPerBlock = defaultRewardPerBlock;
     }
 
     // 누가 언제 호출?
-    function  distributeReward(address to) internal {
+    // initialize, genesis staking(최초의 staking)할 때 total staked가 0임을 고려하자 (맨 첫 상황 고려)
+    modifier updateReward(address to)  {
+        if (staked[to] > 0) {
         uint256 blocks = block.number - lastClaimedBlock[to];
-        uint256 reward = (blocks * rewardPerBlock * 
-            staked[to]) / totalStaked;
+        uint256 reward = (blocks * rewardPerBlock * staked[to]) / totalStaked;
         stakingToken.mint(reward, to);
-        lastClaimedBlock[to] = block.number;
+        }
+        lastClaimedBlock[to] = block.number;  // 항상 호출되어야 함
+        _;  // _란? modifier가 적용된 함수의 본문이 실행되는 위치 (=caller, 여기서는 맨 뒤에 실행)
     }
 
-    function stake(uint256 _amount) external {
+    // 누구나 rewardPerBlock를 바꿀 수 있음 -> 보안상 위험
+    function setRewardPerBlock(uint256 _amount) external onlyManager {
+        rewardPerBlock = _amount;
+    }
+
+    function stake(uint256 _amount) external updateReward(msg.sender) {
         require(_amount >= 0, "cannot stake 0 amount");
-        distributeReward(msg.sender);
         stakingToken.transferFrom(msg.sender, address(this), _amount);  // contract의 주소를 받기(this)
         staked[msg.sender] += _amount;
         totalStaked += _amount;
         emit Staked(msg.sender, _amount);
     }
 
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount) external updateReward(msg.sender) {
         require(staked[msg.sender] >= _amount, "insufficient staked token");
-        distributeReward(msg.sender);
         stakingToken.transfer(_amount, msg.sender);
         staked[msg.sender] -= _amount;
         totalStaked -= _amount;

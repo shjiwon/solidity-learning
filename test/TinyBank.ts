@@ -70,5 +70,12 @@ describe("TinyBank", () => {
                 hre.ethers.parseUnits((BLOCKS + MINTING_AMOUNT + 1n).toString())
             )
         })
-    })
+        // 권한 없는 사람에 의해 rewardPerBlock 값이 변경될 때 revert를 해야 함
+        it("Should revert when changing rewardPerBlock by hacker", async () => {
+            const hacker = signers[3];
+            const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
+            await expect(tinyBankC.connect(hacker).setRewardPerBlock(rewardToChange))
+            .to.be.revertedWith("You are not authorized to manage this contract");
+        })
+    });
 });
